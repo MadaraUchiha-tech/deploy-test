@@ -1,7 +1,8 @@
 // src/services/api.js
 // Fixed API URL to point to backend on port 5000
 
-const API_BASE_URL = 'http://localhost:5002';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+
 
 /**
  * Upload media files (images/videos)
