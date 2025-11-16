@@ -53,19 +53,70 @@ router.get('/files/:id', async (req, res) => {
   try {
     const db = admin.database();
     const fileRef = db.ref(`uploads/${req.params.id}`);
-    
+
     const snapshot = await fileRef.once('value');
-    
+
     if (!snapshot.exists()) {
       return res.status(404).json({ error: 'File not found' });
     }
-    
+
     res.json({
       id: req.params.id,
       ...snapshot.val()
     });
   } catch (error) {
     console.error('Error fetching file:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /files/:id/data - Get JSON file data from database
+router.get('/files/:id/data', async (req, res) => {
+  try {
+    const db = admin.database();
+    const fileRef = db.ref(`uploads/${req.params.id}`);
+
+    const snapshot = await fileRef.once('value');
+
+    if (!snapshot.exists()) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const fileData = snapshot.val();
+
+    // Only works for JSON files
+    if (fileData.type !== 'json') {
+      return res.status(400).json({ error: 'Not a JSON file' });
+    }
+
+    // Query the data from the appropriate database
+    const { queryPostgreSQL, queryMongoDB } = require('../services/databaseManager');
+
+    let data = [];
+
+    try {
+      if (fileData.db_type === 'PostgreSQL') {
+        data = await queryPostgreSQL(fileData.table_name, 1000);
+      } else if (fileData.db_type === 'MongoDB') {
+        data = await queryMongoDB(fileData.table_name, 1000);
+      }
+
+      res.json({
+        filename: fileData.filename,
+        db_type: fileData.db_type,
+        table_name: fileData.table_name,
+        record_count: data.length,
+        data: data
+      });
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      res.status(500).json({
+        error: 'Failed to retrieve data from database',
+        message: dbError.message
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching JSON data:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { getUploadedFiles, deleteFile } from '../services/api';
-import { FileJson, Image as ImageIcon, Video, MoreVertical, Download, Trash2, RefreshCw } from 'lucide-react';
+import { getUploadedFiles, deleteFile, getJSONFileData } from '../services/api';
+import { FileJson, Image as ImageIcon, Video, MoreVertical, Download, Trash2, RefreshCw, Eye } from 'lucide-react';
 
 // Helper function to optimize Cloudinary URLs
 const getOptimizedImageUrl = (url, width = 48, height = 48) => {
   if (!url || !url.includes('cloudinary')) {
     return url;
   }
-  
+
   // Insert transformation parameters into Cloudinary URL
   return url.replace('/upload/', `/upload/w_${width},h_${height},c_fill,q_auto/`);
 };
 
-const FileCard = ({ file, onDelete }) => {
+const FileCard = ({ file, onDelete, onViewJSON }) => {
   const isMedia = file.type === 'media';
   const isJSON = file.type === 'json';
   const [imageError, setImageError] = useState(false);
@@ -105,10 +105,22 @@ const FileCard = ({ file, onDelete }) => {
       </div>
       
       <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        {file.url && (
-          <a 
-            href={file.url} 
-            target="_blank" 
+        {/* View button for JSON files */}
+        {isJSON && (
+          <button
+            onClick={() => onViewJSON && onViewJSON(file.id)}
+            className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-white/10 rounded-full"
+            title="View JSON data"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Open in new tab for media files */}
+        {file.url && isMedia && (
+          <a
+            href={file.url}
+            target="_blank"
             rel="noopener noreferrer"
             className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
             title="Open in new tab"
@@ -116,7 +128,8 @@ const FileCard = ({ file, onDelete }) => {
             <Download className="w-4 h-4" />
           </a>
         )}
-        <button 
+
+        <button
           onClick={() => onDelete && onDelete(file.id)}
           className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/10 rounded-full"
           title="Delete file"
@@ -187,6 +200,118 @@ const FileGrid = ({ selectedFolder = 'all' }) => {
       // Refresh to ensure UI is in sync with backend
       fetchFiles();
     }
+  };
+
+  const handleViewJSON = async (fileId) => {
+    try {
+      console.log('Fetching JSON data for file:', fileId);
+      const data = await getJSONFileData(fileId);
+
+      // Create a formatted HTML page to display the JSON
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${data.filename} - JSON Viewer</title>
+          <style>
+            body {
+              font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+              background: #1a1a2e;
+              color: #eee;
+              padding: 20px;
+              margin: 0;
+            }
+            .header {
+              background: #16213e;
+              padding: 20px;
+              border-radius: 8px;
+              margin-bottom: 20px;
+              border: 1px solid #0f3460;
+            }
+            .header h1 {
+              margin: 0 0 10px 0;
+              color: #a78bfa;
+              font-size: 24px;
+            }
+            .header p {
+              margin: 5px 0;
+              color: #94a3b8;
+              font-size: 14px;
+            }
+            .badge {
+              display: inline-block;
+              padding: 4px 12px;
+              background: #3b82f6;
+              color: white;
+              border-radius: 4px;
+              font-size: 12px;
+              margin-right: 10px;
+            }
+            .badge.postgres { background: #3b82f6; }
+            .badge.mongodb { background: #10b981; }
+            pre {
+              background: #16213e;
+              border: 1px solid #0f3460;
+              border-radius: 8px;
+              padding: 20px;
+              overflow-x: auto;
+              line-height: 1.6;
+            }
+            .json-key { color: #a78bfa; }
+            .json-string { color: #fbbf24; }
+            .json-number { color: #60a5fa; }
+            .json-boolean { color: #f87171; }
+            .json-null { color: #94a3b8; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>📄 ${data.filename}</h1>
+            <p>
+              <span class="badge ${data.db_type === 'PostgreSQL' ? 'postgres' : 'mongodb'}">
+                🗄️ ${data.db_type}
+              </span>
+              <span class="badge">
+                📊 ${data.record_count} records
+              </span>
+              <span class="badge">
+                📁 Table: ${data.table_name}
+              </span>
+            </p>
+          </div>
+          <pre>${syntaxHighlight(JSON.stringify(data.data, null, 2))}</pre>
+        </body>
+        </html>
+      `;
+
+      // Open in new tab
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(htmlContent);
+      newWindow.document.close();
+    } catch (error) {
+      console.error('Failed to view JSON:', error);
+      alert('Failed to load JSON data: ' + error.message);
+    }
+  };
+
+  // Helper function to syntax highlight JSON
+  const syntaxHighlight = (json) => {
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+      let cls = 'json-number';
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          cls = 'json-key';
+        } else {
+          cls = 'json-string';
+        }
+      } else if (/true|false/.test(match)) {
+        cls = 'json-boolean';
+      } else if (/null/.test(match)) {
+        cls = 'json-null';
+      }
+      return '<span class="' + cls + '">' + match + '</span>';
+    });
   };
 
   useEffect(() => {
@@ -264,7 +389,7 @@ const FileGrid = ({ selectedFolder = 'all' }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFiles.map(file => (
-          <FileCard key={file.id} file={file} onDelete={handleDelete} />
+          <FileCard key={file.id} file={file} onDelete={handleDelete} onViewJSON={handleViewJSON} />
         ))}
       </div>
     </div>

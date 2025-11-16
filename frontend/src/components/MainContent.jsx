@@ -228,20 +228,8 @@ const MainContent = () => {
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative w-full max-w-xs">
-                <input
-                  type="text"
-                  placeholder="Search by filename..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-white/10 border border-white/20 rounded-md py-2 pl-10 pr-4 w-full text-sm placeholder-gray-400 text-white"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
-
+         
+           
             {/* File Grid */}
             <FileGrid selectedFolder={selectedFolder} searchQuery={searchQuery} />
           </div>

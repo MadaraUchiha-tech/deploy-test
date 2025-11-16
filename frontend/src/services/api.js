@@ -1,11 +1,8 @@
 // src/services/api.js
 // Fixed API URL to point to backend on port 5000
 
-// src/services/api.js
-// Dynamic API URL based on environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+const API_BASE_URL = 'http://localhost:5002';
 
-console.log('🔗 Connecting to API:', API_BASE_URL);
 /**
  * Upload media files (images/videos)
  * @param {File[]} files - Array of File objects
@@ -137,6 +134,27 @@ export const deleteFile = async (id) => {
 };
 
 /**
+ * Get JSON file data from database
+ * @param {string} id - File ID
+ * @returns {Promise<object>}
+ */
+export const getJSONFileData = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/files/${id}/data`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch JSON data');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Get JSON data error:', error);
+    throw error;
+  }
+};
+
+/**
  * Get all categories
  * @returns {Promise<object>}
  */
@@ -219,6 +237,7 @@ export default {
   getUploadedFiles,
   getFileById,
   deleteFile,
+  getJSONFileData,
   getCategories,
   getAnalytics,
   getUploadHistory,
