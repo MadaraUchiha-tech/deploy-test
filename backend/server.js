@@ -1,3 +1,4 @@
+// server.js - Add at the top
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -7,11 +8,33 @@ const admin = require('firebase-admin');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
-// Middleware
-app.use(cors());
+// CORS configuration for production
+const allowedOrigins = [
+  'http://localhost:5173', // Local development
+  'http://localhost:3000',
+  process.env.FRONTEND_URL // Production frontend URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Trust proxy for Render
+app.set('trust proxy', 1);
 
 // Initialize Firebase Admin SDK (Database Only - No Storage)
 let firebaseInitialized = false;

@@ -4,7 +4,17 @@ import os
 import mimetypes
 
 app = Flask(__name__)
-CORS(app)
+
+# CORS configuration
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    os.environ.get("FRONTEND_URL"),
+    os.environ.get("BACKEND_URL")
+]
+allowed_origins = [origin for origin in allowed_origins if origin]
+
+CORS(app, origins=allowed_origins, supports_credentials=True)
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -28,17 +38,14 @@ def classify_media():
         return jsonify({"error": "Empty filename"}), 400
 
     try:
-        # Get the content type from the request
         content_type = file.content_type or ''
 
-        # Fallback to mime type detection from filename
         if not content_type:
             guessed_type, _ = mimetypes.guess_type(file.filename)
             content_type = guessed_type or ''
 
-        print(f"📁 Processing file: {file.filename} (type: {content_type})")
+        print(f"📂 Processing file: {file.filename} (type: {content_type})")
 
-        # Determine if it's an image or video
         if content_type.startswith('image/'):
             tags = ['images', 'media', 'image']
             category = 'Images'
@@ -48,7 +55,6 @@ def classify_media():
             category = 'Videos'
             media_type = 'video'
         else:
-            # Default to images if unable to determine
             tags = ['images', 'media', 'unknown']
             category = 'Images'
             media_type = 'image'
@@ -70,4 +76,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     print(f"🚀 Starting Simple Media Categorizer Service on port {port}")
     print(f"📊 Categorizes files into: Images or Videos")
-    app.run(host='0.0.0.0', port=port, debug=True)
+    
+    # Use 0.0.0.0 to allow external connections
+    app.run(host='0.0.0.0', port=port, debug=False)
