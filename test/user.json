@@ -1,0 +1,31 @@
+{
+  "_id": 1,
+  "name": "Kavya",
+  "email": "kavya@example.com",
+  "orders": [
+    {
+      "order_id": 101,
+      "order_date": "2025-11-10",
+      "total_amount": 1299,
+      "items": [
+        {
+          "product_name": "Keyboard",
+          "quantity": 1,
+          "price": 1299
+        }
+      ]
+    },
+    {
+      "order_id": 103,
+      "order_date": "2025-11-14",
+      "total_amount": 499,
+      "items": [
+        {
+          "product_name": "USB Cable",
+          "quantity": 1,
+          "price": 499
+        }
+      ]
+    }
+  ]
+}

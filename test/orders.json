@@ -1,0 +1,16 @@
+{
+  "orders": [
+    {
+      "order_id": 101,
+      "user_id": 1,
+      "order_date": "2025-11-10",
+      "total_amount": 1299
+    },
+    {
+      "order_id": 102,
+      "user_id": 2,
+      "order_date": "2025-11-12",
+      "total_amount": 2999
+    }
+  ]
+}
