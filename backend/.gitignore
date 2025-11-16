@@ -1,4 +1,3 @@
 .env
 node_modules/
 immss-31355-firebase-adminsdk-fbsvc-aaf28401e9.json
-*.json
